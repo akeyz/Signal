@@ -1,4 +1,4 @@
-# Signal 🟢
+# Signal
 
 A macOS menu-bar status light app — a breathing LED that lives in your status bar.
 

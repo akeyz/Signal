@@ -1,4 +1,5 @@
 import Cocoa
+import ServiceManagement
 
 // MARK: - Light Color Definition
 
@@ -37,13 +38,21 @@ enum LightColor: String, CaseIterable {
 
     /// Display label for the menu item.
     var label: String {
+        let text: String
+        switch self {
+        case .black:  text = NSLocalizedString("Off", comment: "")
+        case .red:    text = NSLocalizedString("Red", comment: "")
+        case .yellow: text = NSLocalizedString("Yellow", comment: "")
+        case .green:  text = NSLocalizedString("Green", comment: "")
+        }
+
         switch self {
         case .black:
             let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            return isDark ? "⚪  Off" : "⚫  Off"
-        case .red:    return "🔴  Red"
-        case .yellow: return "🟡  Yellow"
-        case .green:  return "🟢  Green"
+            return isDark ? "⚪  \(text)" : "⚫  \(text)"
+        case .red:    return "🔴  \(text)"
+        case .yellow: return "🟡  \(text)"
+        case .green:  return "🟢  \(text)"
         }
     }
 }
@@ -67,7 +76,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.toolTip = "Signal – Status Light"
+        statusItem.button?.toolTip = NSLocalizedString("Signal – Status Light", comment: "")
 
         buildMenu()
         applyIcon()
@@ -106,18 +115,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         menu.autoenablesItems = false
 
-        // Title
-        let titleItem = NSMenuItem(title: "Signal", action: nil, keyEquivalent: "")
-        titleItem.isEnabled = false
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 13, weight: .semibold),
-            .foregroundColor: NSColor.labelColor
-        ]
-        titleItem.attributedTitle = NSAttributedString(string: "Signal", attributes: attrs)
-        menu.addItem(titleItem)
-
-        menu.addItem(NSMenuItem.separator())
-
         // Color options
         for color in LightColor.allCases {
             let item = NSMenuItem(
@@ -133,8 +130,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
+        // Start at Login
+        let startAtLoginItem = NSMenuItem(
+            title: NSLocalizedString("Start at Login", comment: ""),
+            action: #selector(toggleStartAtLogin(_:)),
+            keyEquivalent: ""
+        )
+        startAtLoginItem.target = self
+        startAtLoginItem.state = (SMAppService.mainApp.status == .enabled) ? .on : .off
+        menu.addItem(startAtLoginItem)
+
+        menu.addItem(NSMenuItem.separator())
+
         // Quit
-        let quitItem = NSMenuItem(title: "Quit Signal", action: #selector(quitApp), keyEquivalent: "q")
+        let quitItem = NSMenuItem(
+            title: NSLocalizedString("Quit Signal", comment: ""),
+            action: #selector(quitApp),
+            keyEquivalent: "q"
+        )
         quitItem.target = self
         menu.addItem(quitItem)
 
@@ -144,6 +157,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func menuColorSelected(_ sender: NSMenuItem) {
         guard let color = sender.representedObject as? LightColor else { return }
         switchColor(to: color)
+    }
+
+    @objc private func toggleStartAtLogin(_ sender: NSMenuItem) {
+        let service = SMAppService.mainApp
+        if service.status == .enabled {
+            do {
+                try service.unregister()
+                print("Successfully unregistered start at login")
+            } catch {
+                print("Failed to unregister start at login: \(error)")
+            }
+        } else {
+            do {
+                try service.register()
+                print("Successfully registered start at login")
+            } catch {
+                print("Failed to register start at login: \(error)")
+            }
+        }
+        buildMenu()
     }
 
     @objc private func quitApp() {

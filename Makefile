@@ -23,6 +23,8 @@ build:
 	cp "$(RELEASE_DIR)/$(APP_NAME)" "$(APP_BUNDLE)/Contents/MacOS/$(APP_NAME)"
 	cp "Resources/Info.plist"       "$(APP_BUNDLE)/Contents/"
 	cp "Resources/AppIcon.icns"     "$(APP_BUNDLE)/Contents/Resources/" 2>/dev/null || true
+	cp -R Resources/en.lproj        "$(APP_BUNDLE)/Contents/Resources/"
+	cp -R Resources/zh-Hans.lproj   "$(APP_BUNDLE)/Contents/Resources/"
 
 	@echo "🔏 Ad-hoc code signing…"
 	codesign --force --sign - "$(APP_BUNDLE)"

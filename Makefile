@@ -3,7 +3,7 @@
 # ──────────────────────────────────────────────────────────────
 
 APP_NAME    := Signal
-CLI_NAME    := sgl
+CLI_NAME    := sgnl
 BUILD_DIR   := .build
 RELEASE_DIR := $(BUILD_DIR)/release
 APP_BUNDLE  := $(BUILD_DIR)/$(APP_NAME).app

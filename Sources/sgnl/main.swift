@@ -1,11 +1,11 @@
 import Foundation
 
-// MARK: - sgl – CLI companion for Signal.app
+// MARK: - sgnl – CLI companion for Signal.app
 //
 // Usage:
-//   sgl <black|off|red|yellow|green>
-//   sgl breath <on|off>
-//   sgl help
+//   sgnl <black|off|red|yellow|green>
+//   sgnl breath <on|off>
+//   sgnl help
 //
 // Sends a DistributedNotification to the running Signal.app.
 
@@ -13,12 +13,12 @@ let validColors = ["black", "off", "red", "yellow", "green"]
 
 func printUsage() {
     let usage = """
-    sgl – control Signal menu-bar status light
+    sgnl – control Signal menu-bar status light
 
     USAGE:
-      sgl <color>         Switch LED color
-      sgl breath <on|off> Toggle breathing animation (saves CPU when off)
-      sgl help            Show this help message
+      sgnl <color>         Switch LED color
+      sgnl breath <on|off> Toggle breathing animation (saves CPU when off)
+      sgnl help            Show this help message
 
     COLORS:
       black|off  Light off (no glow)
@@ -27,11 +27,11 @@ func printUsage() {
       green      Steady green light (no breathing)
 
     EXAMPLES:
-      sgl red             Switch to red (alert)
-      sgl green           Switch to green (all clear)
-      sgl off             Turn the light off
-      sgl breath off      Disable breathing animation
-      sgl breath on       Re-enable breathing animation
+      sgnl red             Switch to red (alert)
+      sgnl green           Switch to green (all clear)
+      sgnl off             Turn the light off
+      sgnl breath off      Disable breathing animation
+      sgnl breath on       Re-enable breathing animation
     """
     print(usage)
 }
@@ -53,12 +53,12 @@ if cmd == "help" || cmd == "--help" || cmd == "-h" {
 // --- Breath toggle ---
 if cmd == "breath" {
     guard args.count > 1 else {
-        fputs("Error: sgl breath requires 'on' or 'off'\n", stderr)
+        fputs("Error: sgnl breath requires 'on' or 'off'\n", stderr)
         exit(1)
     }
     let value = args[1].lowercased()
     guard value == "on" || value == "off" else {
-        fputs("Error: sgl breath requires 'on' or 'off'\n", stderr)
+        fputs("Error: sgnl breath requires 'on' or 'off'\n", stderr)
         exit(1)
     }
     DistributedNotificationCenter.default().postNotificationName(
@@ -73,7 +73,7 @@ if cmd == "breath" {
 
 // --- Color switch ---
 guard validColors.contains(cmd) else {
-    fputs("Error: unknown command '\(command)'. Run 'sgl help' for usage.\n", stderr)
+    fputs("Error: unknown command '\(command)'. Run 'sgnl help' for usage.\n", stderr)
     exit(1)
 }
 

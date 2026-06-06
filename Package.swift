@@ -10,8 +10,8 @@ let package = Package(
             path: "Sources/Signal"
         ),
         .executableTarget(
-            name: "sgl",
-            path: "Sources/sgl"
+            name: "sgnl",
+            path: "Sources/sgnl"
         )
     ]
 )

@@ -7,7 +7,7 @@ A macOS menu-bar status light app — a breathing LED that lives in your status 
 - **Breathing LED** in the menu bar with a 3D glow effect
 - **Three colors**: 🟢 Green (calm) → 🟡 Yellow (caution) → 🔴 Red (alert)
 - Each color breathes at a different speed (red = fastest, green = slowest)
-- **CLI companion** (`sgl`) for scripting and automation
+- **CLI companion** (`sgnl`) for scripting and automation
 - **LSUIElement** — no Dock icon, pure menu-bar app
 - macOS 14+ (Sonoma)
 
@@ -23,23 +23,23 @@ make clean    # Remove build artifacts
 ## CLI Usage
 
 ```bash
-sgl red       # Switch to red   (fastest breathing, ~1.2s cycle)
-sgl yellow    # Switch to yellow (medium breathing,  ~2.4s cycle)
-sgl green     # Switch to green  (slowest breathing, ~4.0s cycle)
-sgl help      # Show help
+sgnl red       # Switch to red   (fastest breathing, ~1.2s cycle)
+sgnl yellow    # Switch to yellow (medium breathing,  ~2.4s cycle)
+sgnl green     # Switch to green  (slowest breathing, ~4.0s cycle)
+sgnl help      # Show help
 
-sgl breath off # close effect
+sgnl breath off # close effect
 ```
 
 ### Automation Examples
 
 ```bash
 # Turn red on test failure
-if ! make test; then sgl red; fi
+if ! make test; then sgnl red; fi
 
 # CI status monitor
-sgl green   # deploy succeeded
-sgl red     # deploy failed
+sgnl green   # deploy succeeded
+sgnl red     # deploy failed
 ```
 
 ## Architecture
@@ -54,7 +54,7 @@ signal/
     ├── Signal/
     │   ├── main.swift         # NSApplication entry point
     │   └── AppDelegate.swift  # Status item, animation, IPC
-    └── sgl/
+    └── sgnl/
         └── main.swift         # CLI → DistributedNotification
 ```
 

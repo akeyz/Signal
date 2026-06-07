@@ -42,7 +42,7 @@ struct ClaudeHistoryView: View {
                 ClaudeDetailView(session: session)
             }
             .onAppear {
-                viewModel.loadClaudeSessions()
+                viewModel.loadClaudeSessions(forceReload: true)
             }
         }
     }

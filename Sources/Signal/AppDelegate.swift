@@ -106,7 +106,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             viewModel.currentColor = currentColor
             viewModel.breathingEnabled = breathingEnabled
             viewModel.refreshStartAtLogin()
-            viewModel.loadClaudeSessions(forceReload: true)
             
             popover.contentSize = NSSize(width: 350, height: 480)
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)

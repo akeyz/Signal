@@ -125,20 +125,18 @@ struct ColorGridButton: View {
     let action: () -> Void
     
     @State private var isHovered = false
-    @State private var isAnimating = false
     
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
-                // Colored Circle (LED representation)
-                Circle()
-                    .fill(swiftColor(for: color))
-                    .frame(width: 14, height: 14)
-                    .opacity(isSelected && color.breathes ? (isAnimating ? 0.35 : 1.0) : 1.0)
-                    .shadow(
-                        color: swiftColor(for: color).opacity(isSelected ? 0.8 : 0.2),
-                        radius: isSelected ? (isSelected && color.breathes && isAnimating ? 6 : 4) : 1
-                    )
+                // Colored Circle (LED representation using CALayer animation to run on GPU)
+                GlowingLEDView(
+                    color: color.color,
+                    breathes: color.breathes,
+                    period: color.period,
+                    isSelected: isSelected
+                )
+                .frame(width: 14, height: 14)
                 
                 Text(cleanLabel(for: color))
                     .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
@@ -146,6 +144,7 @@ struct ColorGridButton: View {
                 
                 Spacer()
             }
+            .contentShape(Rectangle()) // Fix Point 1: ensures the whole button rect is clickable, not just text
             .padding(.horizontal, 12)
             .padding(.vertical, 12)
             .background(
@@ -163,13 +162,6 @@ struct ColorGridButton: View {
         .onHover { hovering in
             isHovered = hovering
         }
-        .onAppear {
-            if color.breathes {
-                withAnimation(.easeInOut(duration: color.period / 2.0).repeatForever(autoreverses: true)) {
-                    isAnimating = true
-                }
-            }
-        }
     }
     
     private func cleanLabel(for color: LightColor) -> String {
@@ -181,18 +173,62 @@ struct ColorGridButton: View {
         if rawLabel.contains("⚪") || rawLabel.contains("⚫") { return NSLocalizedString("Off", comment: "") }
         return rawLabel
     }
+}
+
+// NSViewRepresentable wrapper to run breathing animations on the GPU (saving CPU)
+struct GlowingLEDView: NSViewRepresentable {
+    let color: NSColor
+    let breathes: Bool
+    let period: Double
+    let isSelected: Bool
     
-    private func swiftColor(for color: LightColor) -> Color {
-        switch color {
-        case .black:
-            let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            return isDark ? Color(white: 0.8) : Color(white: 0.2)
-        case .red:
-            return Color(red: 0.88, green: 0.23, blue: 0.17)
-        case .yellow:
-            return Color(red: 0.99, green: 0.75, blue: 0.08)
-        case .green:
-            return Color(red: 0.19, green: 0.64, blue: 0.31)
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        view.wantsLayer = true
+        updateLayer(view.layer)
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSView, context: Context) {
+        updateLayer(nsView.layer)
+    }
+    
+    private func updateLayer(_ layer: CALayer?) {
+        guard let layer = layer else { return }
+        layer.sublayers?.forEach { $0.removeFromSuperlayer() }
+        
+        let size: CGFloat = 14
+        let circleLayer = CAShapeLayer()
+        circleLayer.frame = CGRect(x: 0, y: 0, width: size, height: size)
+        circleLayer.path = CGPath(ellipseIn: CGRect(x: 0, y: 0, width: size, height: size), transform: nil)
+        circleLayer.fillColor = color.cgColor
+        
+        if isSelected {
+            circleLayer.shadowColor = color.cgColor
+            circleLayer.shadowOpacity = 0.8
+            circleLayer.shadowOffset = .zero
+            circleLayer.shadowRadius = 4
+        } else {
+            circleLayer.shadowColor = color.cgColor
+            circleLayer.shadowOpacity = 0.2
+            circleLayer.shadowOffset = .zero
+            circleLayer.shadowRadius = 1
+        }
+        
+        layer.addSublayer(circleLayer)
+        
+        if breathes && isSelected {
+            let anim = CABasicAnimation(keyPath: "opacity")
+            anim.fromValue = 0.35
+            anim.toValue = 1.0
+            anim.duration = period / 2.0
+            anim.autoreverses = true
+            anim.repeatCount = .infinity
+            anim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            circleLayer.add(anim, forKey: "breathe")
+        } else {
+            circleLayer.opacity = 1.0
+            circleLayer.removeAllAnimations()
         }
     }
 }

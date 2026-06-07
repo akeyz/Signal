@@ -1,5 +1,6 @@
 import Cocoa
 import ServiceManagement
+import SwiftUI
 
 // MARK: - Light Color Definition
 
@@ -71,6 +72,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var currentColor: LightColor = .black
     private var breathingEnabled: Bool = false
+    
+    private let viewModel = AppViewModel()
+    private var popover: NSPopover!
 
     // MARK: Lifecycle
 
@@ -78,8 +82,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.toolTip = NSLocalizedString("Signal – Status Light", comment: "")
 
-        buildMenu()
         applyIcon()
+        setupPopover()
 
         // Listen for color-change commands from sgnl
         DistributedNotificationCenter.default().addObserver(
@@ -106,81 +110,82 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func appearanceDidChange() {
         applyIcon()
-        buildMenu()
     }
 
-    // MARK: Menu
+    // MARK: Popover Setup
 
-    private func buildMenu() {
-        let menu = NSMenu()
-        menu.autoenablesItems = false
-
-        // Color options
-        for color in LightColor.allCases {
-            let item = NSMenuItem(
-                title: color.label,
-                action: #selector(menuColorSelected(_:)),
-                keyEquivalent: ""
-            )
-            item.target = self
-            item.representedObject = color
-            item.state = (color == currentColor) ? .on : .off
-            menu.addItem(item)
+    private func setupPopover() {
+        popover = NSPopover()
+        popover.behavior = .transient
+        
+        let hostingController = NSHostingController(rootView: MainView(viewModel: viewModel))
+        hostingController.preferredContentSize = NSSize(width: 350, height: 480)
+        
+        popover.contentViewController = hostingController
+        popover.contentSize = NSSize(width: 350, height: 480)
+        
+        // Link status item action to toggle popover
+        if let button = statusItem.button {
+            button.target = self
+            button.action = #selector(togglePopover(_:))
         }
-
-        menu.addItem(NSMenuItem.separator())
-
-        // Start at Login
-        let startAtLoginItem = NSMenuItem(
-            title: NSLocalizedString("Start at Login", comment: ""),
-            action: #selector(toggleStartAtLogin(_:)),
-            keyEquivalent: ""
-        )
-        startAtLoginItem.target = self
-        startAtLoginItem.state = (SMAppService.mainApp.status == .enabled) ? .on : .off
-        menu.addItem(startAtLoginItem)
-
-        menu.addItem(NSMenuItem.separator())
-
-        // Quit
-        let quitItem = NSMenuItem(
-            title: NSLocalizedString("Quit Signal", comment: ""),
-            action: #selector(quitApp),
-            keyEquivalent: "q"
-        )
-        quitItem.target = self
-        menu.addItem(quitItem)
-
-        statusItem.menu = menu
-    }
-
-    @objc private func menuColorSelected(_ sender: NSMenuItem) {
-        guard let color = sender.representedObject as? LightColor else { return }
-        switchColor(to: color)
-    }
-
-    @objc private func toggleStartAtLogin(_ sender: NSMenuItem) {
-        let service = SMAppService.mainApp
-        if service.status == .enabled {
-            do {
-                try service.unregister()
-                print("Successfully unregistered start at login")
-            } catch {
-                print("Failed to unregister start at login: \(error)")
+        
+        // Configure AppViewModel state & callbacks
+        viewModel.currentColor = currentColor
+        viewModel.breathingEnabled = breathingEnabled
+        viewModel.refreshStartAtLogin()
+        
+        viewModel.onColorChange = { [weak self] color in
+            self?.switchColor(to: color)
+        }
+        viewModel.onBreathingChange = { [weak self] enabled in
+            guard let self = self else { return }
+            if self.breathingEnabled != enabled {
+                self.toggleBreathing()
             }
+        }
+        viewModel.onStartAtLoginChange = { [weak self] enabled in
+            self?.setStartAtLogin(enabled)
+        }
+        viewModel.onQuit = {
+            NSApp.terminate(nil)
+        }
+    }
+
+    @objc private func togglePopover(_ sender: AnyObject?) {
+        guard let button = statusItem.button else { return }
+        if popover.isShown {
+            popover.close()
         } else {
+            // Refresh state before showing popover
+            viewModel.currentColor = currentColor
+            viewModel.breathingEnabled = breathingEnabled
+            viewModel.refreshStartAtLogin()
+            
+            popover.contentSize = NSSize(width: 350, height: 480)
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            popover.contentViewController?.view.window?.makeKey()
+        }
+    }
+
+    private func setStartAtLogin(_ enabled: Bool) {
+        let service = SMAppService.mainApp
+        if enabled {
             do {
                 try service.register()
                 print("Successfully registered start at login")
             } catch {
                 print("Failed to register start at login: \(error)")
             }
+        } else {
+            do {
+                try service.unregister()
+                print("Successfully unregistered start at login")
+            } catch {
+                print("Failed to unregister start at login: \(error)")
+            }
         }
-        buildMenu()
-    }
-
-    @objc private func quitApp() {
-        NSApp.terminate(nil)
+        viewModel.refreshStartAtLogin()
     }
 
     // MARK: Color Switching
@@ -188,14 +193,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func switchColor(to newColor: LightColor) {
         guard newColor != currentColor else { return }
         currentColor = newColor
+        viewModel.currentColor = newColor
         applyIcon()
-        buildMenu()
     }
 
     @objc private func toggleBreathing() {
         breathingEnabled.toggle()
+        viewModel.breathingEnabled = breathingEnabled
         applyIcon()
-        buildMenu()
     }
 
     // MARK: Distributed Notification Handler

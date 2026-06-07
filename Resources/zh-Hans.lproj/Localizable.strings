@@ -5,3 +5,12 @@
 "Start at Login" = "开机启动";
 "Quit Signal" = "退出";
 "Signal – Status Light" = "Signal – 状态指示灯";
+"Status Control" = "状态控制";
+"Claude History" = "Claude 历史";
+"Breathing Effect" = "呼吸效果";
+"No conversation history" = "暂无对话历史";
+"Loading..." = "加载中...";
+"prompts" = "条提示词";
+"Project" = "项目";
+"User Prompts" = "用户输入";
+"Back" = "返回";

@@ -35,12 +35,23 @@ class ClaudeHistoryLoader {
                 var allLines: [HistoryLine] = []
                 let decoder = JSONDecoder()
                 
-                for line in lines {
+                var uniqueSessionIds = Set<String>()
+                let sessionLimit = 80
+                
+                // Parse lines in reverse order (newest first) to minimize CPU and RAM
+                for line in lines.reversed() {
                     let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
                     if trimmed.isEmpty { continue }
                     if let data = trimmed.data(using: .utf8),
                        let historyLine = try? decoder.decode(HistoryLine.self, from: data) {
-                        allLines.append(historyLine)
+                        
+                        let sid = historyLine.sessionId
+                        if uniqueSessionIds.contains(sid) {
+                            allLines.append(historyLine)
+                        } else if uniqueSessionIds.count < sessionLimit {
+                            uniqueSessionIds.insert(sid)
+                            allLines.append(historyLine)
+                        }
                     }
                 }
                 

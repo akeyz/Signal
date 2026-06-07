@@ -1,20 +1,19 @@
 import SwiftUI
 
 struct ClaudeHistoryView: View {
-    @State private var sessions: [ClaudeSession] = []
-    @State private var isLoading = true
+    @ObservedObject var viewModel: AppViewModel
     
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                if isLoading {
+                if viewModel.isLoadingSessions {
                     VStack {
                         Spacer()
                         ProgressView(NSLocalizedString("Loading...", comment: ""))
                             .progressViewStyle(.circular)
                         Spacer()
                     }
-                } else if sessions.isEmpty {
+                } else if viewModel.claudeSessions.isEmpty {
                     VStack(spacing: 12) {
                         Spacer()
                         Image(systemName: "bubble.left.and.bubble.right.fill")
@@ -28,7 +27,7 @@ struct ClaudeHistoryView: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 8) {
-                            ForEach(sessions) { session in
+                            ForEach(viewModel.claudeSessions) { session in
                                 NavigationLink(value: session) {
                                     SessionRow(session: session)
                                 }
@@ -43,15 +42,8 @@ struct ClaudeHistoryView: View {
                 ClaudeDetailView(session: session)
             }
             .onAppear {
-                loadSessions()
+                viewModel.loadClaudeSessions()
             }
-        }
-    }
-    
-    private func loadSessions() {
-        ClaudeHistoryLoader.loadHistory { loadedSessions in
-            self.sessions = loadedSessions
-            self.isLoading = false
         }
     }
 }

@@ -28,7 +28,7 @@ struct MainView: View {
                 if selectedTab == 0 {
                     StatusControlView(viewModel: viewModel)
                 } else {
-                    ClaudeHistoryView()
+                    ClaudeHistoryView(viewModel: viewModel)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

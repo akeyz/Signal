@@ -125,6 +125,7 @@ struct ColorGridButton: View {
     let action: () -> Void
     
     @State private var isHovered = false
+    @State private var isAnimating = false
     
     var body: some View {
         Button(action: action) {
@@ -133,7 +134,11 @@ struct ColorGridButton: View {
                 Circle()
                     .fill(swiftColor(for: color))
                     .frame(width: 14, height: 14)
-                    .shadow(color: swiftColor(for: color).opacity(isSelected ? 0.8 : 0.2), radius: isSelected ? 4 : 1)
+                    .opacity(isSelected && color.breathes ? (isAnimating ? 0.35 : 1.0) : 1.0)
+                    .shadow(
+                        color: swiftColor(for: color).opacity(isSelected ? 0.8 : 0.2),
+                        radius: isSelected ? (isSelected && color.breathes && isAnimating ? 6 : 4) : 1
+                    )
                 
                 Text(cleanLabel(for: color))
                     .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
@@ -157,6 +162,13 @@ struct ColorGridButton: View {
         .buttonStyle(.plain)
         .onHover { hovering in
             isHovered = hovering
+        }
+        .onAppear {
+            if color.breathes {
+                withAnimation(.easeInOut(duration: color.period / 2.0).repeatForever(autoreverses: true)) {
+                    isAnimating = true
+                }
+            }
         }
     }
     

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct StatusControlView: View {
     @ObservedObject var viewModel: AppViewModel
+    @Environment(\.colorScheme) var colorScheme
     
     // Grid configuration for 2x2 layout
     private let columns = [
@@ -111,7 +112,7 @@ struct StatusControlView: View {
             .buttonStyle(.plain)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(Color(NSColor.underPageBackgroundColor).opacity(0.3))
+            .background(colorScheme == .light ? Color.white : Color(white: 0.15))
         }
         .onAppear {
             viewModel.refreshStartAtLogin()

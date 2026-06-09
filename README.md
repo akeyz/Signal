@@ -11,14 +11,36 @@ A macOS menu-bar status light app — a breathing LED that lives in your status 
 - **LSUIElement** — no Dock icon, pure menu-bar app
 - macOS 14+ (Sonoma)
 
-## Build & Run
+## Build & Installation
+
+### Option 1: Direct Build & Installation
+Build the app and install it to your system paths:
 
 ```bash
 make build    # Build release binary & .app bundle
-make run      # Build and launch
-make install  # Copy to /Applications + ~/.local/bin
+make run      # Build and launch immediately
+make install  # Copy .app to /Applications and CLI helper to ~/.local/bin
 make clean    # Remove build artifacts
 ```
+
+### Option 2: Package as DMG
+Build a clean, shareable disk image (.dmg) containing `Signal.app` and a shortcut to `/Applications`:
+
+```bash
+make dmg      # Packages the app into .build/Signal.dmg
+```
+
+To install:
+1. Open the DMG and drag `Signal.app` to your `Applications` folder.
+2. Launch the application.
+3. Open the status bar controls and click **"Install 'sgnl' CLI Command"** to install the `sgnl` command line tool directly to `~/.local/bin` without using terminal scripts.
+
+---
+
+## Code Signing & Troubleshooting
+
+For instructions on signing the application with an Apple Developer Account, or resolving macOS Gatekeeper warnings ("app is damaged" / "unidentified developer"), please see [SIGNING.md](SIGNING.md).
+
 
 ## CLI Usage
 

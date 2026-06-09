@@ -40,7 +40,7 @@ struct ClaudeDetailView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(Color(NSColor.windowBackgroundColor))
+            .background(Color(NSColor.controlBackgroundColor))
             
             Divider()
             
@@ -86,7 +86,7 @@ struct ClaudeDetailView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(Color(NSColor.controlBackgroundColor))
     }
 }
 

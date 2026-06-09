@@ -61,6 +61,7 @@ struct StatusControlView: View {
                                 EmptyView()
                             }
                             .toggleStyle(.switch)
+                            .controlSize(.small)
                             .labelsHidden()
                             .disabled(!viewModel.currentColor.breathes && viewModel.currentColor != .black) // Disable if color doesn't breathe, except when Off
                         }
@@ -84,6 +85,7 @@ struct StatusControlView: View {
                                 EmptyView()
                             }
                             .toggleStyle(.switch)
+                            .controlSize(.small)
                             .labelsHidden()
                         }
                     }

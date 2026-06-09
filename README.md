@@ -64,6 +64,60 @@ sgnl green   # deploy succeeded
 sgnl red     # deploy failed
 ```
 
+### Claude Code Hook Integration
+
+You can integrate `sgnl` with [Claude Code](https://github.com/anthropics/claude-code) hooks to turn your status bar light into a physical/visual indicator of Claude's state!
+
+Add the following to your project-level or global `.claude/settings.json` file:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "sgnl green",
+        "shell": "bash",
+        "timeout": 3
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "command": "sgnl yellow",
+        "shell": "bash",
+        "timeout": 3
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sgnl red",
+            "shell": "bash",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "sgnl off",
+        "shell": "bash",
+        "timeout": 3
+      }
+    ]
+  }
+}
+```
+
+- **Green (Idle/Ready)**: Lights up when you start a session or when Claude stops thinking and waits for your input.
+- **Yellow (Thinking/Working)**: Breathes with a caution light whenever you submit a prompt and Claude starts executing tools/thinking.
+
+
 ## Architecture
 
 ```

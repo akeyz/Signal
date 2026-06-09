@@ -18,7 +18,7 @@ struct MainView: View {
             }
             .padding(.top, 12)
             .padding(.horizontal, 16)
-            .background(Color(NSColor.windowBackgroundColor))
+            .background(Color(NSColor.controlBackgroundColor))
             
             Divider()
                 .padding(.top, 8)
@@ -34,7 +34,7 @@ struct MainView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(width: 350, height: 480)
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(Color(NSColor.controlBackgroundColor))
     }
 }
 

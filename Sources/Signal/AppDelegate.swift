@@ -143,7 +143,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let targetURL = targetDir.appendingPathComponent("sgnl")
         
         guard let sourceURL = Bundle.main.url(forResource: "sgnl", withExtension: nil) else {
-            showCLIError(message: "Could not locate the 'sgnl' binary inside the application bundle resources.")
+            showCLIError(message: NSLocalizedString("Could not locate the 'sgnl' binary inside the application bundle resources.", comment: ""))
             return
         }
         
@@ -166,23 +166,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             
             // Show success alert
             let alert = NSAlert()
-            alert.messageText = "Installation Successful"
-            alert.informativeText = "The 'sgnl' command-line tool has been installed to:\n\(targetURL.path)\n\nPlease make sure '\(targetDir.path)' is in your PATH."
+            alert.messageText = NSLocalizedString("Installation Successful", comment: "")
+            let format = NSLocalizedString("The 'sgnl' command-line tool has been installed to:\n%@\n\nPlease make sure '%@' is in your PATH.", comment: "")
+            alert.informativeText = String(format: format, targetURL.path, targetDir.path)
             alert.alertStyle = .informational
-            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: NSLocalizedString("OK", comment: ""))
             alert.runModal()
             
         } catch {
-            showCLIError(message: "An error occurred during installation:\n\(error.localizedDescription)")
+            let format = NSLocalizedString("An error occurred during installation:\n%@", comment: "")
+            showCLIError(message: String(format: format, error.localizedDescription))
         }
     }
     
     private func showCLIError(message: String) {
         let alert = NSAlert()
-        alert.messageText = "Installation Failed"
+        alert.messageText = NSLocalizedString("Installation Failed", comment: "")
         alert.informativeText = message
         alert.alertStyle = .critical
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: NSLocalizedString("OK", comment: ""))
         alert.runModal()
     }
 

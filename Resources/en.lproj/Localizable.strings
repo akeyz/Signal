@@ -14,3 +14,17 @@
 "Project" = "Project";
 "User Prompts" = "User Prompts";
 "Back" = "Back";
+"Breathes every %.1fs" = "Breathes every %.1fs";
+"Only Red and Yellow breathe" = "Only Red and Yellow breathe";
+"Launch automatically on startup" = "Launch automatically on startup";
+"CLI Helper Tool" = "CLI Helper Tool";
+"Control Signal directly from your terminal or scripts using the sgnl tool." = "Control Signal directly from your terminal or scripts using the sgnl tool.";
+"Install 'sgnl' CLI Command" = "Install 'sgnl' CLI Command";
+"Session ID:" = "Session ID:";
+"Installation Successful" = "Installation Successful";
+"The 'sgnl' command-line tool has been installed to:\n%@\n\nPlease make sure '%@' is in your PATH." = "The 'sgnl' command-line tool has been installed to:\n%@\n\nPlease make sure '%@' is in your PATH.";
+"Installation Failed" = "Installation Failed";
+"Could not locate the 'sgnl' binary inside the application bundle resources." = "Could not locate the 'sgnl' binary inside the application bundle resources.";
+"An error occurred during installation:\n%@" = "An error occurred during installation:\n%@";
+"OK" = "OK";
+

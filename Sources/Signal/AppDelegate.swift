@@ -203,7 +203,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Render a static LED icon sized to fit the status bar without glow padding.
     private func renderLED() -> NSImage {
         let ledW: CGFloat = 8.0
-        let ledH: CGFloat = 14.0
+        let ledH: CGFloat = 16.0
         let padding: CGFloat = 2.0
         let size = NSSize(width: ledW + padding * 2, height: ledH + padding * 2)
         let image = NSImage(size: size, flipped: false) { [self] rect in

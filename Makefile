@@ -8,9 +8,9 @@ BUILD_DIR   := .build
 RELEASE_DIR := $(BUILD_DIR)/release
 APP_BUNDLE  := $(BUILD_DIR)/$(APP_NAME).app
 INSTALL_DIR := /Applications
-CLI_INSTALL := $(HOME)/.local/bin
+CLI_INSTALL := $(HOME)/local/bin
 
-.PHONY: build run install uninstall clean help
+.PHONY: build run install uninstall clean dmg help
 
 # ── Build ────────────────────────────────────────────────────
 build:
@@ -53,11 +53,28 @@ uninstall:
 	rm -f  "$(CLI_INSTALL)/$(CLI_NAME)"
 	@echo "✅ Uninstalled."
 
+# ── DMG Packaging ───────────────────────────────────────────
+dmg: build
+	@echo "📦 Preparing DMG staging area…"
+	rm -rf "$(BUILD_DIR)/dmg_stage"
+	mkdir -p "$(BUILD_DIR)/dmg_stage"
+	cp -R "$(APP_BUNDLE)" "$(BUILD_DIR)/dmg_stage/"
+	cp "$(RELEASE_DIR)/$(CLI_NAME)" "$(BUILD_DIR)/dmg_stage/"
+	cp "Resources/Install CLI.command" "$(BUILD_DIR)/dmg_stage/"
+	chmod +x "$(BUILD_DIR)/dmg_stage/Install CLI.command"
+	ln -s /Applications "$(BUILD_DIR)/dmg_stage/Applications"
+
+	@echo "📦 Creating DMG volume…"
+	rm -f "$(BUILD_DIR)/$(APP_NAME).dmg"
+	hdiutil create -ov -volname "$(APP_NAME)" -srcfolder "$(BUILD_DIR)/dmg_stage" -format UDZO "$(BUILD_DIR)/$(APP_NAME).dmg"
+	rm -rf "$(BUILD_DIR)/dmg_stage"
+	@echo "✅ DMG packaging complete → $(BUILD_DIR)/$(APP_NAME).dmg"
+
 # ── Clean ────────────────────────────────────────────────────
 clean:
 	@echo "🧹 Cleaning…"
 	swift package clean
-	rm -rf "$(APP_BUNDLE)"
+	rm -rf "$(APP_BUNDLE)" "$(BUILD_DIR)/$(APP_NAME).dmg"
 	@echo "✅ Clean."
 
 # ── Help ─────────────────────────────────────────────────────
@@ -66,7 +83,8 @@ help:
 	@echo "Signal Makefile targets:"
 	@echo "  make build     – Build release binary & .app bundle"
 	@echo "  make run       – Build and launch the app"
-	@echo "  make install   – Copy .app to /Applications, CLI to ~/.local/bin"
+	@echo "  make install   – Copy .app to /Applications, CLI to ~/local/bin"
+	@echo "  make dmg       – Package .app and CLI into .dmg"
 	@echo "  make uninstall – Remove installed files"
 	@echo "  make clean     – Remove build artifacts"
 	@echo "  make help      – Show this help"

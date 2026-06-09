@@ -9,6 +9,7 @@ RELEASE_DIR := $(BUILD_DIR)/release
 APP_BUNDLE  := $(BUILD_DIR)/$(APP_NAME).app
 INSTALL_DIR := /Applications
 CLI_INSTALL := $(HOME)/.local/bin
+CODESIGN_IDENTITY ?= -
 
 .PHONY: build run install uninstall clean dmg help
 
@@ -27,8 +28,8 @@ build:
 	cp -R Resources/zh-Hans.lproj   "$(APP_BUNDLE)/Contents/Resources/"
 	cp "$(RELEASE_DIR)/$(CLI_NAME)" "$(APP_BUNDLE)/Contents/Resources/$(CLI_NAME)"
 
-	@echo "🔏 Ad-hoc code signing…"
-	codesign --force --sign - "$(APP_BUNDLE)"
+	@echo "🔏 Code signing app bundle with identity '$(CODESIGN_IDENTITY)'…"
+	codesign --force --sign "$(CODESIGN_IDENTITY)" "$(APP_BUNDLE)"
 
 	@echo "✅ Build complete → $(APP_BUNDLE)"
 
@@ -66,6 +67,10 @@ dmg: build
 	rm -f "$(BUILD_DIR)/$(APP_NAME).dmg"
 	hdiutil create -ov -volname "$(APP_NAME)" -srcfolder "$(BUILD_DIR)/dmg_stage" -format UDZO "$(BUILD_DIR)/$(APP_NAME).dmg"
 	rm -rf "$(BUILD_DIR)/dmg_stage"
+	@if [ "$(CODESIGN_IDENTITY)" != "-" ]; then \
+		echo "🔏 Signing DMG volume…"; \
+		codesign --force --sign "$(CODESIGN_IDENTITY)" "$(BUILD_DIR)/$(APP_NAME).dmg"; \
+	fi
 	@echo "✅ DMG packaging complete → $(BUILD_DIR)/$(APP_NAME).dmg"
 
 # ── Clean ────────────────────────────────────────────────────

@@ -8,7 +8,7 @@ BUILD_DIR   := .build
 RELEASE_DIR := $(BUILD_DIR)/release
 APP_BUNDLE  := $(BUILD_DIR)/$(APP_NAME).app
 INSTALL_DIR := /Applications
-CLI_INSTALL := $(HOME)/local/bin
+CLI_INSTALL := $(HOME)/.local/bin
 
 .PHONY: build run install uninstall clean dmg help
 
@@ -81,7 +81,7 @@ help:
 	@echo "Signal Makefile targets:"
 	@echo "  make build     – Build release binary & .app bundle"
 	@echo "  make run       – Build and launch the app"
-	@echo "  make install   – Copy .app to /Applications, CLI to ~/local/bin"
+	@echo "  make install   – Copy .app to /Applications, CLI to ~/.local/bin"
 	@echo "  make dmg       – Package .app and CLI into .dmg"
 	@echo "  make uninstall – Remove installed files"
 	@echo "  make clean     – Remove build artifacts"

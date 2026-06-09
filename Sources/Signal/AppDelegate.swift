@@ -139,7 +139,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func installCLI() {
         let fileManager = FileManager.default
         let homeDir = fileManager.homeDirectoryForCurrentUser
-        let targetDir = homeDir.appendingPathComponent("local/bin")
+        let targetDir = homeDir.appendingPathComponent(".local/bin")
         let targetURL = targetDir.appendingPathComponent("sgnl")
         
         guard let sourceURL = Bundle.main.url(forResource: "sgnl", withExtension: nil) else {

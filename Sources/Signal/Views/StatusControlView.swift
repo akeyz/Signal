@@ -87,6 +87,38 @@ struct StatusControlView: View {
                             .labelsHidden()
                         }
                     }
+                    
+                    Divider()
+                    
+                    // Section 3: CLI Helper Tool
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(NSLocalizedString("CLI Helper Tool", comment: ""))
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.primary)
+                        
+                        Text(NSLocalizedString("Control Signal directly from your terminal or scripts using the sgnl tool.", comment: ""))
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                            .lineLimit(nil)
+                            .fixedSize(horizontal: false, vertical: true)
+                        
+                        Button(action: {
+                            viewModel.installCLI()
+                        }) {
+                            HStack {
+                                Image(systemName: "terminal")
+                                    .font(.system(size: 12, weight: .semibold))
+                                Text(NSLocalizedString("Install 'sgnl' CLI Command", comment: ""))
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(Color.accentColor.opacity(0.1))
+                            .cornerRadius(6)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
                 .padding(.all, 16)
             }

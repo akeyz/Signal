@@ -25,6 +25,7 @@ build:
 	cp "Resources/AppIcon.icns"     "$(APP_BUNDLE)/Contents/Resources/" 2>/dev/null || true
 	cp -R Resources/en.lproj        "$(APP_BUNDLE)/Contents/Resources/"
 	cp -R Resources/zh-Hans.lproj   "$(APP_BUNDLE)/Contents/Resources/"
+	cp "$(RELEASE_DIR)/$(CLI_NAME)" "$(APP_BUNDLE)/Contents/Resources/$(CLI_NAME)"
 
 	@echo "🔏 Ad-hoc code signing…"
 	codesign --force --sign - "$(APP_BUNDLE)"
@@ -59,9 +60,6 @@ dmg: build
 	rm -rf "$(BUILD_DIR)/dmg_stage"
 	mkdir -p "$(BUILD_DIR)/dmg_stage"
 	cp -R "$(APP_BUNDLE)" "$(BUILD_DIR)/dmg_stage/"
-	cp "$(RELEASE_DIR)/$(CLI_NAME)" "$(BUILD_DIR)/dmg_stage/"
-	cp "Resources/Install CLI.command" "$(BUILD_DIR)/dmg_stage/"
-	chmod +x "$(BUILD_DIR)/dmg_stage/Install CLI.command"
 	ln -s /Applications "$(BUILD_DIR)/dmg_stage/Applications"
 
 	@echo "📦 Creating DMG volume…"

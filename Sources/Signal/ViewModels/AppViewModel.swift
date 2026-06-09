@@ -23,6 +23,7 @@ class AppViewModel: ObservableObject {
     var onColorChange: ((LightColor) -> Void)?
     var onBreathingChange: ((Bool) -> Void)?
     var onStartAtLoginChange: ((Bool) -> Void)?
+    var onInstallCLI: (() -> Void)?
     var onQuit: (() -> Void)?
     
     func selectColor(_ color: LightColor) {
@@ -42,6 +43,10 @@ class AppViewModel: ObservableObject {
     
     func refreshStartAtLogin() {
         startAtLogin = (SMAppService.mainApp.status == .enabled)
+    }
+    
+    func installCLI() {
+        onInstallCLI?()
     }
     
     func quit() {

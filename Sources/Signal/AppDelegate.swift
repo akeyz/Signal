@@ -92,6 +92,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         viewModel.onStartAtLoginChange = { [weak self] enabled in
             self?.setStartAtLogin(enabled)
         }
+        viewModel.onInstallCLI = { [weak self] in
+            self?.installCLI()
+        }
         viewModel.onQuit = {
             NSApp.terminate(nil)
         }
@@ -131,6 +134,56 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         viewModel.refreshStartAtLogin()
+    }
+
+    private func installCLI() {
+        let fileManager = FileManager.default
+        let homeDir = fileManager.homeDirectoryForCurrentUser
+        let targetDir = homeDir.appendingPathComponent("local/bin")
+        let targetURL = targetDir.appendingPathComponent("sgnl")
+        
+        guard let sourceURL = Bundle.main.url(forResource: "sgnl", withExtension: nil) else {
+            showCLIError(message: "Could not locate the 'sgnl' binary inside the application bundle resources.")
+            return
+        }
+        
+        do {
+            // Create target folder if it doesn't exist
+            if !fileManager.fileExists(atPath: targetDir.path) {
+                try fileManager.createDirectory(at: targetDir, withIntermediateDirectories: true, attributes: nil)
+            }
+            
+            // Remove existing CLI if it's there
+            if fileManager.fileExists(atPath: targetURL.path) {
+                try fileManager.removeItem(at: targetURL)
+            }
+            
+            // Copy new CLI
+            try fileManager.copyItem(at: sourceURL, to: targetURL)
+            
+            // Make executable (chmod +x)
+            chmod(targetURL.path, 0o755)
+            
+            // Show success alert
+            let alert = NSAlert()
+            alert.messageText = "Installation Successful"
+            alert.informativeText = "The 'sgnl' command-line tool has been installed to:\n\(targetURL.path)\n\nPlease make sure '\(targetDir.path)' is in your PATH."
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+            
+        } catch {
+            showCLIError(message: "An error occurred during installation:\n\(error.localizedDescription)")
+        }
+    }
+    
+    private func showCLIError(message: String) {
+        let alert = NSAlert()
+        alert.messageText = "Installation Failed"
+        alert.informativeText = message
+        alert.alertStyle = .critical
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 
     // MARK: Color Switching

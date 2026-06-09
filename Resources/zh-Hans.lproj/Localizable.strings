@@ -14,3 +14,17 @@
 "Project" = "项目";
 "User Prompts" = "用户输入";
 "Back" = "返回";
+"Breathes every %.1fs" = "每 %.1f 秒呼吸一次";
+"Only Red and Yellow breathe" = "仅红灯和黄灯支持呼吸效果";
+"Launch automatically on startup" = "开机时自动启动";
+"CLI Helper Tool" = "命令行辅助工具";
+"Control Signal directly from your terminal or scripts using the sgnl tool." = "使用 sgnl 工具直接从终端或脚本控制 Signal。";
+"Install 'sgnl' CLI Command" = "安装 'sgnl' 命令行工具";
+"Session ID:" = "会话 ID:";
+"Installation Successful" = "安装成功";
+"The 'sgnl' command-line tool has been installed to:\n%@\n\nPlease make sure '%@' is in your PATH." = "sgnl 命令行工具已成功安装至：\n%@\n\n请确保将 '%@' 添加到了您的 PATH 环境变量中。";
+"Installation Failed" = "安装失败";
+"Could not locate the 'sgnl' binary inside the application bundle resources." = "无法在应用包资源中找到 'sgnl' 二进制文件。";
+"An error occurred during installation:\n%@" = "安装过程中发生错误：\n%@";
+"OK" = "确定";
+

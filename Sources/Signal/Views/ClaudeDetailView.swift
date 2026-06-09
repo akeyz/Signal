@@ -63,7 +63,7 @@ struct ClaudeDetailView: View {
                         }
                         
                         HStack {
-                            Text("Session ID:")
+                            Text(NSLocalizedString("Session ID:", comment: ""))
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.secondary)
                             Text(session.sessionId)

@@ -55,6 +55,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func appearanceDidChange() {
         applyIcon()
+        popover?.appearance = NSApp.effectiveAppearance
     }
 
     // MARK: Popover Setup
@@ -62,6 +63,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupPopover() {
         popover = NSPopover()
         popover.behavior = .transient
+        popover.appearance = NSApp.effectiveAppearance
         
         let hostingController = NSHostingController(rootView: MainView(viewModel: viewModel))
         hostingController.preferredContentSize = NSSize(width: 350, height: 480)

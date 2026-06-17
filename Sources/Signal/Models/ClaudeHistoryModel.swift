@@ -17,7 +17,150 @@ struct ClaudeSession: Identifiable, Hashable {
     let prompts: [HistoryLine]
 }
 
+struct AssistantResponse: Codable, Hashable {
+    let thinking: String?
+    let text: String
+}
+
+struct SessionJSONLLine: Codable {
+    let type: String
+    let timestamp: String?
+    let message: SessionMessage?
+}
+
+struct SessionMessage: Codable {
+    let id: String?
+    let role: String?
+    let content: SessionContent?
+}
+
+enum SessionContent: Codable {
+    case string(String)
+    case array([SessionContentBlock])
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let str = try? container.decode(String.self) {
+            self = .string(str)
+        } else if let arr = try? container.decode([SessionContentBlock].self) {
+            self = .array(arr)
+        } else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid content format")
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .string(let str):
+            try container.encode(str)
+        case .array(let arr):
+            try container.encode(arr)
+        }
+    }
+}
+
+struct SessionContentBlock: Codable {
+    let type: String
+    let text: String?
+    let thinking: String?
+}
+
 class ClaudeHistoryLoader {
+    static func loadReplies(projectPath: String, sessionId: String, completion: @escaping ([Int64: AssistantResponse]) -> Void) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let home = FileManager.default.homeDirectoryForCurrentUser
+            let escapedProject = projectPath
+                .replacingOccurrences(of: "/", with: "-")
+                .replacingOccurrences(of: ".", with: "-")
+            let sessionURL = home.appendingPathComponent(".claude/projects/\(escapedProject)/\(sessionId).jsonl")
+            
+            guard FileManager.default.fileExists(atPath: sessionURL.path) else {
+                DispatchQueue.main.async { completion([:]) }
+                return
+            }
+            
+            do {
+                let content = try String(contentsOf: sessionURL, encoding: .utf8)
+                let lines = content.components(separatedBy: .newlines)
+                
+                let decoder = JSONDecoder()
+                let isoFormatter = ISO8601DateFormatter()
+                isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                
+                let isoFormatterFallback = ISO8601DateFormatter()
+                isoFormatterFallback.formatOptions = [.withInternetDateTime]
+                
+                var currentPromptTimestamp: Int64? = nil
+                var accumulatedText: [String] = []
+                var accumulatedThinking: [String] = []
+                var replies: [Int64: AssistantResponse] = [:]
+                
+                for line in lines {
+                    let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if trimmed.isEmpty { continue }
+                    
+                    guard let data = trimmed.data(using: .utf8),
+                          let parsedLine = try? decoder.decode(SessionJSONLLine.self, from: data) else {
+                        continue
+                    }
+                    
+                    if parsedLine.type == "user" {
+                        if let prevTimestamp = currentPromptTimestamp {
+                            let text = accumulatedText.joined(separator: "\n")
+                            let thinking = accumulatedThinking.isEmpty ? nil : accumulatedThinking.joined(separator: "\n")
+                            replies[prevTimestamp] = AssistantResponse(thinking: thinking, text: text)
+                        }
+                        
+                        accumulatedText = []
+                        accumulatedThinking = []
+                        
+                        if let timestampStr = parsedLine.timestamp {
+                            let parsedDate = isoFormatter.date(from: timestampStr) ?? isoFormatterFallback.date(from: timestampStr)
+                            if let date = parsedDate {
+                                currentPromptTimestamp = Int64(date.timeIntervalSince1970 * 1000)
+                            } else {
+                                currentPromptTimestamp = nil
+                            }
+                        } else {
+                            currentPromptTimestamp = nil
+                        }
+                    } else if parsedLine.type == "assistant", let message = parsedLine.message {
+                        if let contentBlocks = message.content {
+                            switch contentBlocks {
+                            case .string(let str):
+                                accumulatedText.append(str)
+                            case .array(let blocks):
+                                for block in blocks {
+                                    if block.type == "text", let text = block.text {
+                                        accumulatedText.append(text)
+                                    } else if block.type == "thinking", let thinking = block.thinking {
+                                        accumulatedThinking.append(thinking)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if let prevTimestamp = currentPromptTimestamp {
+                    let text = accumulatedText.joined(separator: "\n")
+                    let thinking = accumulatedThinking.isEmpty ? nil : accumulatedThinking.joined(separator: "\n")
+                    replies[prevTimestamp] = AssistantResponse(thinking: thinking, text: text)
+                }
+                
+                DispatchQueue.main.async {
+                    completion(replies)
+                }
+            } catch {
+                print("Error loading Claude replies: \(error)")
+                DispatchQueue.main.async {
+                    completion([:])
+                }
+            }
+        }
+    }
+
     static func loadHistory(completion: @escaping ([ClaudeSession]) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
             let home = FileManager.default.homeDirectoryForCurrentUser

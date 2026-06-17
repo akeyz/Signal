@@ -86,6 +86,7 @@ struct ClaudeDetailView: View {
                     ForEach(sortedPrompts) { prompt in
                         PromptBubbleView(
                             prompt: prompt,
+                            toolType: session.toolType,
                             isExpanded: expandedPromptIds.contains(prompt.id),
                             isLoadingReplies: isLoadingReplies,
                             reply: findReply(for: prompt.timestamp),
@@ -108,8 +109,24 @@ struct ClaudeDetailView: View {
         .background(Color(NSColor.controlBackgroundColor))
         .onAppear {
             isLoadingReplies = true
-            ClaudeHistoryLoader.loadReplies(projectPath: session.projectPath, sessionId: session.sessionId) { loadedReplies in
-                self.replies = loadedReplies
+            switch session.toolType {
+            case .claude:
+                ClaudeHistoryLoader.loadReplies(projectPath: session.projectPath, sessionId: session.sessionId) { loadedReplies in
+                    self.replies = loadedReplies
+                    self.isLoadingReplies = false
+                }
+            case .pi:
+                ClaudeHistoryLoader.loadPiReplies(projectPath: session.projectPath, sessionId: session.sessionId) { loadedReplies in
+                    self.replies = loadedReplies
+                    self.isLoadingReplies = false
+                }
+            case .openCode:
+                ClaudeHistoryLoader.loadOpenCodeReplies(sessionId: session.sessionId) { loadedReplies in
+                    self.replies = loadedReplies
+                    self.isLoadingReplies = false
+                }
+            case .trae:
+                self.replies = [:]
                 self.isLoadingReplies = false
             }
         }
@@ -137,6 +154,7 @@ struct ClaudeDetailView: View {
 
 struct PromptBubbleView: View {
     let prompt: HistoryLine
+    let toolType: ToolType
     let isExpanded: Bool
     let isLoadingReplies: Bool
     let reply: AssistantResponse?
@@ -290,8 +308,14 @@ struct PromptBubbleView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "info.circle")
                                 .font(.system(size: 11))
-                            Text(NSLocalizedString("No reply recorded for this prompt.", comment: ""))
-                                .font(.system(size: 11, weight: .medium))
+                            if toolType == .trae {
+                                Text(NSLocalizedString("Trae stores full chat histories in the cloud. Only prompt input history is available locally.", comment: ""))
+                                    .font(.system(size: 11, weight: .medium))
+                                    .multilineTextAlignment(.leading)
+                            } else {
+                                Text(NSLocalizedString("No reply recorded for this prompt.", comment: ""))
+                                    .font(.system(size: 11, weight: .medium))
+                            }
                         }
                         .foregroundColor(.secondary)
                         .padding(.all, 10)

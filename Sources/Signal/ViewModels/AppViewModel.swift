@@ -5,15 +5,52 @@ class AppViewModel: ObservableObject {
     @Published var currentColor: LightColor = .black
     @Published var breathingEnabled: Bool = false
     @Published var startAtLogin: Bool = false
-    @Published var claudeSessions: [ClaudeSession] = []
+    @Published var selectedTool: ToolType = .claude
+    @Published var historySessions: [ToolType: [HistorySession]] = [:]
     @Published var isLoadingSessions: Bool = false
     private var hasLoadedSessions = false
+    
+    var claudeSessions: [HistorySession] {
+        return historySessions[selectedTool] ?? []
+    }
     
     func loadClaudeSessions(forceReload: Bool = false) {
         if hasLoadedSessions && !forceReload { return }
         isLoadingSessions = true
-        ClaudeHistoryLoader.loadHistory { [weak self] sessions in
-            self?.claudeSessions = sessions
+        
+        let group = DispatchGroup()
+        var loadedHistory: [ToolType: [HistorySession]] = [:]
+        
+        // Load Claude
+        group.enter()
+        ClaudeHistoryLoader.loadHistory { sessions in
+            loadedHistory[.claude] = sessions
+            group.leave()
+        }
+        
+        // Load OpenCode
+        group.enter()
+        ClaudeHistoryLoader.loadOpenCodeHistory { sessions in
+            loadedHistory[.openCode] = sessions
+            group.leave()
+        }
+        
+        // Load Pi
+        group.enter()
+        ClaudeHistoryLoader.loadPiHistory { sessions in
+            loadedHistory[.pi] = sessions
+            group.leave()
+        }
+        
+        // Load Trae
+        group.enter()
+        ClaudeHistoryLoader.loadTraeHistory { sessions in
+            loadedHistory[.trae] = sessions
+            group.leave()
+        }
+        
+        group.notify(queue: .main) { [weak self] in
+            self?.historySessions = loadedHistory
             self?.isLoadingSessions = false
             self?.hasLoadedSessions = true
         }

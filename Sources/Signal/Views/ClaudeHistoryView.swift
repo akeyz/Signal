@@ -6,6 +6,19 @@ struct ClaudeHistoryView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                // Segmented control switcher for different tools
+                Picker("", selection: $viewModel.selectedTool) {
+                    ForEach(ToolType.allCases) { tool in
+                        Text(tool.rawValue).tag(tool)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(NSColor.controlBackgroundColor).opacity(0.2))
+                
+                Divider()
+                
                 if viewModel.isLoadingSessions {
                     VStack {
                         Spacer()
@@ -22,6 +35,9 @@ struct ClaudeHistoryView: View {
                         Text(NSLocalizedString("No conversation history", comment: ""))
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.secondary)
+                        Text(String(format: NSLocalizedString("No history records found for %@", comment: ""), viewModel.selectedTool.rawValue))
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary.opacity(0.7))
                         Spacer()
                     }
                 } else {

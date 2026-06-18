@@ -308,14 +308,8 @@ struct PromptBubbleView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "info.circle")
                                 .font(.system(size: 11))
-                            if toolType == .trae {
-                                Text(NSLocalizedString("Trae stores full chat histories in the cloud. Only prompt input history is available locally.", comment: ""))
-                                    .font(.system(size: 11, weight: .medium))
-                                    .multilineTextAlignment(.leading)
-                            } else {
-                                Text(NSLocalizedString("No reply recorded for this prompt.", comment: ""))
-                                    .font(.system(size: 11, weight: .medium))
-                            }
+                            Text(NSLocalizedString("No reply recorded for this prompt.", comment: ""))
+                                .font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(.secondary)
                         .padding(.all, 10)

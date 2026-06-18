@@ -493,12 +493,25 @@ class ClaudeHistoryLoader {
                             if let url = URL(string: configuration) {
                                 projectPath = url.path
                             }
+                        } else if let workspace = json["workspace"] as? String {
+                            if let url = URL(string: workspace) {
+                                projectPath = url.path
+                            }
                         }
                     }
                     
-                    if projectPath.isEmpty { continue }
+                    let projectName: String
+                    if !projectPath.isEmpty {
+                        var name = URL(fileURLWithPath: projectPath).lastPathComponent
+                        if name.hasSuffix(".code-workspace") {
+                            name = String(name.dropLast(".code-workspace".count))
+                        }
+                        projectName = name
+                    } else {
+                        projectName = dir.lastPathComponent
+                        projectPath = dir.path
+                    }
                     
-                    let projectName = URL(fileURLWithPath: projectPath).lastPathComponent
                     let sessionId = dir.lastPathComponent
                     
                     guard let db = SQLiteDatabase(path: dbPath) else { continue }

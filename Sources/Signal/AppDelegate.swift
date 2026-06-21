@@ -30,6 +30,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         applyIcon()
         setupPopover()
 
+        // Start screen overlay manager
+        ScreenOverlayManager.shared.start()
+
         // Listen for color-change commands from sgnl
         DistributedNotificationCenter.default().addObserver(
             self,
@@ -55,6 +58,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func appearanceDidChange() {
         applyIcon()
+        popover?.appearance = NSApp.effectiveAppearance
     }
 
     // MARK: Popover Setup
@@ -62,6 +66,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupPopover() {
         popover = NSPopover()
         popover.behavior = .transient
+        popover.appearance = NSApp.effectiveAppearance
         
         let hostingController = NSHostingController(rootView: MainView(viewModel: viewModel))
         hostingController.preferredContentSize = NSSize(width: 350, height: 480)
@@ -82,6 +87,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         viewModel.onColorChange = { [weak self] color in
             self?.switchColor(to: color)
+        }
+        viewModel.onFlashModeChange = { [weak self] mode in
+            guard let self = self else { return }
+            if mode != .off {
+                ScreenOverlayManager.shared.triggerFlash(color: self.currentColor, mode: mode)
+            } else {
+                ScreenOverlayManager.shared.triggerFlash(color: .black, mode: .off)
+            }
         }
         viewModel.onBreathingChange = { [weak self] enabled in
             guard let self = self else { return }
@@ -162,7 +175,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             try fileManager.copyItem(at: sourceURL, to: targetURL)
             
             // Make executable (chmod +x)
-            chmod(targetURL.path, 0o755)
+            if chmod(targetURL.path, 0o755) != 0 {
+                print("Warning: failed to chmod target binary at \(targetURL.path)")
+            }
             
             // Show success alert
             let alert = NSAlert()
@@ -190,20 +205,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: Color Switching
 
-    private func switchColor(to newColor: LightColor) {
-        guard newColor != currentColor else { return }
-        currentColor = newColor
-        viewModel.currentColor = newColor
-        applyIcon()
+    private func switchColor(to newColor: LightColor, forceFlash: Bool = false) {
+        let changed = (newColor != currentColor)
+        if changed {
+            currentColor = newColor
+            viewModel.currentColor = newColor
+            applyIcon()
+        }
+        
+        if changed || forceFlash {
+            ScreenOverlayManager.shared.triggerFlash(color: newColor, mode: viewModel.screenFlashMode)
+        }
     }
 
-    @objc private func toggleBreathing() {
+    private func toggleBreathing() {
         breathingEnabled.toggle()
         viewModel.breathingEnabled = breathingEnabled
         applyIcon()
     }
 
-    // MARK: Distributed Notification Handler
+    // MARK: - Distributed Notification Handler
 
     @objc private func didReceiveColorChange(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
@@ -212,7 +233,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         DispatchQueue.main.async { [weak self] in
-            self?.switchColor(to: color)
+            self?.switchColor(to: color, forceFlash: true)
         }
     }
 

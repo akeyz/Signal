@@ -88,6 +88,29 @@ struct StatusControlView: View {
                             .controlSize(.small)
                             .labelsHidden()
                         }
+                        
+                        // Screen Flash Effect Selector
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(NSLocalizedString("Screen Flash Effect", comment: ""))
+                                    .font(.system(size: 13, weight: .medium))
+                                Text(NSLocalizedString("Gaming-style overlay on color change", comment: ""))
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            Picker("", selection: $viewModel.screenFlashMode) {
+                                ForEach(FlashMode.allCases, id: \.self) { mode in
+                                    Text(mode.label).tag(mode)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .labelsHidden()
+                            .controlSize(.small)
+                            .frame(width: 120)
+                        }
                     }
                     
                     Divider()
@@ -127,7 +150,7 @@ struct StatusControlView: View {
             
             Spacer(minLength: 12)
             
-            // Section 3: Quit Button at bottom
+            // Quit Button at bottom
             Divider()
             
             Button(action: {
@@ -173,7 +196,7 @@ struct ColorGridButton: View {
                 )
                 .frame(width: 14, height: 14)
                 
-                Text(cleanLabel(for: color))
+                Text(color.displayName)
                     .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
                     .foregroundColor(isSelected ? .primary : .secondary)
                 
@@ -197,16 +220,6 @@ struct ColorGridButton: View {
         .onHover { hovering in
             isHovered = hovering
         }
-    }
-    
-    private func cleanLabel(for color: LightColor) -> String {
-        // Strip out the leading emoji from the color label for cleaner grid display
-        let rawLabel = color.label
-        if rawLabel.contains("🔴") { return NSLocalizedString("Red", comment: "") }
-        if rawLabel.contains("🟡") { return NSLocalizedString("Yellow", comment: "") }
-        if rawLabel.contains("🟢") { return NSLocalizedString("Green", comment: "") }
-        if rawLabel.contains("⚪") || rawLabel.contains("⚫") { return NSLocalizedString("Off", comment: "") }
-        return rawLabel
     }
 }
 

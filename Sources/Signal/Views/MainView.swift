@@ -12,7 +12,7 @@ struct MainView: View {
                     selectedTab = 0
                 }
                 
-                TabButton(title: NSLocalizedString("Claude History", comment: ""), icon: "bubble.left.and.bubble.right", isActive: selectedTab == 1) {
+                TabButton(title: NSLocalizedString("AI History", comment: ""), icon: "bubble.left.and.bubble.right", isActive: selectedTab == 1) {
                     selectedTab = 1
                 }
             }

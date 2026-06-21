@@ -88,6 +88,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         viewModel.onColorChange = { [weak self] color in
             self?.switchColor(to: color)
         }
+        viewModel.onFlashModeChange = { [weak self] mode in
+            guard let self = self else { return }
+            if mode != .off {
+                ScreenOverlayManager.shared.triggerFlash(color: self.currentColor, mode: mode)
+            } else {
+                ScreenOverlayManager.shared.triggerFlash(color: .black, mode: .off)
+            }
+        }
         viewModel.onBreathingChange = { [weak self] enabled in
             guard let self = self else { return }
             if self.breathingEnabled != enabled {
@@ -167,7 +175,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             try fileManager.copyItem(at: sourceURL, to: targetURL)
             
             // Make executable (chmod +x)
-            chmod(targetURL.path, 0o755)
+            if chmod(targetURL.path, 0o755) != 0 {
+                print("Warning: failed to chmod target binary at \(targetURL.path)")
+            }
             
             // Show success alert
             let alert = NSAlert()
@@ -195,7 +205,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: Color Switching
 
-    private func switchColor(to newColor: LightColor, forceFlash: Bool = true) {
+    private func switchColor(to newColor: LightColor, forceFlash: Bool = false) {
         let changed = (newColor != currentColor)
         if changed {
             currentColor = newColor
@@ -208,13 +218,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    @objc private func toggleBreathing() {
+    private func toggleBreathing() {
         breathingEnabled.toggle()
         viewModel.breathingEnabled = breathingEnabled
         applyIcon()
     }
 
-    // MARK: Distributed Notification Handler
+    // MARK: - Distributed Notification Handler
 
     @objc private func didReceiveColorChange(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
@@ -223,7 +233,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         DispatchQueue.main.async { [weak self] in
-            self?.switchColor(to: color)
+            self?.switchColor(to: color, forceFlash: true)
         }
     }
 

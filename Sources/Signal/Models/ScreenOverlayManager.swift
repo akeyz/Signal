@@ -27,13 +27,16 @@ class OverlayWindow: NSPanel {
     override var canBecomeMain: Bool { false }
 }
 
-class ScreenOverlayManager {
+class ScreenOverlayManager: NSObject {
     static let shared = ScreenOverlayManager()
     
     let viewModel = ScreenOverlayViewModel()
     private var windows: [OverlayWindow] = []
+    private var rebuildWorkItem: DispatchWorkItem?
     
-    init() {
+    override init() {
+        super.init()
+        
         viewModel.onAnimationStart = { [weak self] in
             self?.showWindows()
         }
@@ -54,9 +57,13 @@ class ScreenOverlayManager {
     }
     
     @objc private func screensDidChange() {
-        DispatchQueue.main.async { [weak self] in
+        rebuildWorkItem?.cancel()
+        
+        let workItem = DispatchWorkItem { [weak self] in
             self?.rebuildWindows()
         }
+        rebuildWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: workItem)
     }
     
     private func rebuildWindows() {

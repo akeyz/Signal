@@ -33,23 +33,25 @@ enum LightColor: String, CaseIterable {
     /// Whether the light breathes (animates).
     var breathes: Bool { self == .red || self == .yellow }
 
+    /// Localized display name without emoji.
+    var displayName: String {
+        switch self {
+        case .black:  return NSLocalizedString("Off", comment: "")
+        case .red:    return NSLocalizedString("Red", comment: "")
+        case .yellow: return NSLocalizedString("Yellow", comment: "")
+        case .green:  return NSLocalizedString("Green", comment: "")
+        }
+    }
+
     /// Display label for the menu item.
     var label: String {
-        let text: String
-        switch self {
-        case .black:  text = NSLocalizedString("Off", comment: "")
-        case .red:    text = NSLocalizedString("Red", comment: "")
-        case .yellow: text = NSLocalizedString("Yellow", comment: "")
-        case .green:  text = NSLocalizedString("Green", comment: "")
-        }
-
         switch self {
         case .black:
             let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            return isDark ? "⚪  \(text)" : "⚫  \(text)"
-        case .red:    return "🔴  \(text)"
-        case .yellow: return "🟡  \(text)"
-        case .green:  return "🟢  \(text)"
+            return isDark ? "⚪  \(displayName)" : "⚫  \(displayName)"
+        case .red:    return "🔴  \(displayName)"
+        case .yellow: return "🟡  \(displayName)"
+        case .green:  return "🟢  \(displayName)"
         }
     }
 }

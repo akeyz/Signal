@@ -11,11 +11,7 @@ class AppViewModel: ObservableObject {
     @Published var screenFlashMode: FlashMode = .alertThree {
         didSet {
             UserDefaults.standard.set(screenFlashMode.rawValue, forKey: "screenFlashMode")
-            if screenFlashMode != .off {
-                ScreenOverlayManager.shared.triggerFlash(color: currentColor, mode: screenFlashMode)
-            } else {
-                ScreenOverlayManager.shared.triggerFlash(color: .black, mode: .off)
-            }
+            onFlashModeChange?(screenFlashMode)
         }
     }
     private var hasLoadedSessions = false
@@ -77,6 +73,7 @@ class AppViewModel: ObservableObject {
     
     // Callback handlers to notify AppDelegate
     var onColorChange: ((LightColor) -> Void)?
+    var onFlashModeChange: ((FlashMode) -> Void)?
     var onBreathingChange: ((Bool) -> Void)?
     var onStartAtLoginChange: ((Bool) -> Void)?
     var onInstallCLI: (() -> Void)?

@@ -1,7 +1,10 @@
 import Foundation
 
 struct HistoryLine: Codable, Identifiable, Hashable {
-    var id: String { sessionId + "-\(timestamp)" }
+    var id: String {
+        let hash = display.utf8.reduce(5381) { ($0 << 5) &+ $0 &+ Int($1) }
+        return "\(sessionId)-\(timestamp)-\(hash)"
+    }
     let display: String
     let timestamp: Int64
     let project: String
@@ -78,7 +81,7 @@ struct SessionContentBlock: Codable {
     let thinking: String?
 }
 
-class ClaudeHistoryLoader {
+enum ClaudeHistoryLoader {
     static func loadPiHistory(completion: @escaping ([HistorySession]) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
             let home = FileManager.default.homeDirectoryForCurrentUser
@@ -128,9 +131,13 @@ class ClaudeHistoryLoader {
                                         continue
                                     }
                                     
-                                    let sessionId = sessionStart.id
+                                                                let sessionId = sessionStart.id
                                     let projectPath = sessionStart.cwd
                                     let projectName = URL(fileURLWithPath: projectPath).lastPathComponent
+                                    
+                                    let attrs = try? fileManager.attributesOfItem(atPath: file.path)
+                                    let creationDate = attrs?[.creationDate] as? Date ?? Date()
+                                    let fallbackTimestamp = Int64(creationDate.timeIntervalSince1970 * 1000)
                                     
                                     var prompts: [HistoryLine] = []
                                     
@@ -158,9 +165,7 @@ class ClaudeHistoryLoader {
                                             if let ts = msg.timestamp {
                                                 timestamp = ts
                                             } else {
-                                                let attrs = try? fileManager.attributesOfItem(atPath: file.path)
-                                                let creationDate = attrs?[.creationDate] as? Date ?? Date()
-                                                timestamp = Int64(creationDate.timeIntervalSince1970 * 1000)
+                                                timestamp = fallbackTimestamp
                                             }
                                             
                                             let historyLine = HistoryLine(
@@ -236,9 +241,7 @@ class ClaudeHistoryLoader {
                             let timestamp: Int64?
                         }
                         
-                        var currentPromptTimestamp: Int64? = nil
-                        var accumulatedText: [String] = []
-                        var accumulatedThinking: [String] = []
+                        var events: [HistoryEvent] = []
                         
                         for line in lines.dropFirst() {
                             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -251,31 +254,18 @@ class ClaudeHistoryLoader {
                             
                             if parsedLine.type == "message", let msg = parsedLine.message {
                                 if msg.role == "user" {
-                                    if let prevTimestamp = currentPromptTimestamp {
-                                        let text = accumulatedText.joined(separator: "\n")
-                                        let thinking = accumulatedThinking.isEmpty ? nil : accumulatedThinking.joined(separator: "\n")
-                                        replies[prevTimestamp] = AssistantResponse(thinking: thinking, text: text)
-                                    }
-                                    
-                                    accumulatedText = []
-                                    accumulatedThinking = []
-                                    
-                                    if let ts = msg.timestamp {
-                                        currentPromptTimestamp = ts
-                                    } else {
-                                        currentPromptTimestamp = nil
-                                    }
+                                    events.append(.user(timestamp: msg.timestamp))
                                 } else if msg.role == "assistant" {
                                     if let content = msg.content {
                                         switch content {
                                         case .string(let str):
-                                            accumulatedText.append(str)
+                                            events.append(.assistantText(str))
                                         case .array(let blocks):
                                             for block in blocks {
                                                 if block.type == "text", let text = block.text {
-                                                    accumulatedText.append(text)
+                                                    events.append(.assistantText(text))
                                                 } else if block.type == "thinking", let thinking = block.thinking {
-                                                    accumulatedThinking.append(thinking)
+                                                    events.append(.assistantThinking(thinking))
                                                 }
                                             }
                                         }
@@ -284,11 +274,7 @@ class ClaudeHistoryLoader {
                             }
                         }
                         
-                        if let prevTimestamp = currentPromptTimestamp {
-                            let text = accumulatedText.joined(separator: "\n")
-                            let thinking = accumulatedThinking.isEmpty ? nil : accumulatedThinking.joined(separator: "\n")
-                            replies[prevTimestamp] = AssistantResponse(thinking: thinking, text: text)
-                        }
+                        replies = accumulateReplies(from: events)
                     } catch {
                         // ignore
                     }
@@ -411,9 +397,7 @@ class ClaudeHistoryLoader {
             """
             let rows = db.query(sql: querySql, parameters: [sessionId])
             
-            var currentPromptTimestamp: Int64? = nil
-            var accumulatedText: [String] = []
-            var accumulatedThinking: [String] = []
+            var events: [HistoryEvent] = []
             
             for row in rows {
                 guard let role = row["role"],
@@ -425,29 +409,17 @@ class ClaudeHistoryLoader {
                 }
                 
                 if role == "user" {
-                    if let prevTimestamp = currentPromptTimestamp {
-                        let text = accumulatedText.joined(separator: "\n")
-                        let thinking = accumulatedThinking.isEmpty ? nil : accumulatedThinking.joined(separator: "\n")
-                        replies[prevTimestamp] = AssistantResponse(thinking: thinking, text: text)
-                    }
-                    
-                    accumulatedText = []
-                    accumulatedThinking = []
-                    currentPromptTimestamp = timeCreated
+                    events.append(.user(timestamp: timeCreated))
                 } else if role == "assistant" {
                     if partType == "text" {
-                        accumulatedText.append(partText)
+                        events.append(.assistantText(partText))
                     } else if partType == "reasoning" {
-                        accumulatedThinking.append(partText)
+                        events.append(.assistantThinking(partText))
                     }
                 }
             }
             
-            if let prevTimestamp = currentPromptTimestamp {
-                let text = accumulatedText.joined(separator: "\n")
-                let thinking = accumulatedThinking.isEmpty ? nil : accumulatedThinking.joined(separator: "\n")
-                replies[prevTimestamp] = AssistantResponse(thinking: thinking, text: text)
-            }
+            replies = accumulateReplies(from: events)
             
             DispatchQueue.main.async {
                 completion(replies)
@@ -562,6 +534,47 @@ class ClaudeHistoryLoader {
         }
     }
 
+    private enum HistoryEvent {
+        case user(timestamp: Int64?)
+        case assistantText(String)
+        case assistantThinking(String)
+    }
+
+    private static func accumulateReplies(from events: [HistoryEvent]) -> [Int64: AssistantResponse] {
+        var replies: [Int64: AssistantResponse] = [:]
+        var currentPromptTimestamp: Int64? = nil
+        var accumulatedText: [String] = []
+        var accumulatedThinking: [String] = []
+        
+        for event in events {
+            switch event {
+            case .user(let timestamp):
+                if let prevTimestamp = currentPromptTimestamp {
+                    let text = accumulatedText.joined(separator: "\n")
+                    let thinking = accumulatedThinking.isEmpty ? nil : accumulatedThinking.joined(separator: "\n")
+                    replies[prevTimestamp] = AssistantResponse(thinking: thinking, text: text)
+                }
+                accumulatedText = []
+                accumulatedThinking = []
+                currentPromptTimestamp = timestamp
+                
+            case .assistantText(let text):
+                accumulatedText.append(text)
+                
+            case .assistantThinking(let thinking):
+                accumulatedThinking.append(thinking)
+            }
+        }
+        
+        if let prevTimestamp = currentPromptTimestamp {
+            let text = accumulatedText.joined(separator: "\n")
+            let thinking = accumulatedThinking.isEmpty ? nil : accumulatedThinking.joined(separator: "\n")
+            replies[prevTimestamp] = AssistantResponse(thinking: thinking, text: text)
+        }
+        
+        return replies
+    }
+
     static func loadReplies(projectPath: String, sessionId: String, completion: @escaping ([Int64: AssistantResponse]) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
             let home = FileManager.default.homeDirectoryForCurrentUser
@@ -586,10 +599,7 @@ class ClaudeHistoryLoader {
                 let isoFormatterFallback = ISO8601DateFormatter()
                 isoFormatterFallback.formatOptions = [.withInternetDateTime]
                 
-                var currentPromptTimestamp: Int64? = nil
-                var accumulatedText: [String] = []
-                var accumulatedThinking: [String] = []
-                var replies: [Int64: AssistantResponse] = [:]
+                var events: [HistoryEvent] = []
                 
                 for line in lines {
                     let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -601,36 +611,25 @@ class ClaudeHistoryLoader {
                     }
                     
                     if parsedLine.type == "user" {
-                        if let prevTimestamp = currentPromptTimestamp {
-                            let text = accumulatedText.joined(separator: "\n")
-                            let thinking = accumulatedThinking.isEmpty ? nil : accumulatedThinking.joined(separator: "\n")
-                            replies[prevTimestamp] = AssistantResponse(thinking: thinking, text: text)
-                        }
-                        
-                        accumulatedText = []
-                        accumulatedThinking = []
-                        
+                        var timestamp: Int64? = nil
                         if let timestampStr = parsedLine.timestamp {
                             let parsedDate = isoFormatter.date(from: timestampStr) ?? isoFormatterFallback.date(from: timestampStr)
                             if let date = parsedDate {
-                                currentPromptTimestamp = Int64(date.timeIntervalSince1970 * 1000)
-                            } else {
-                                currentPromptTimestamp = nil
+                                timestamp = Int64(date.timeIntervalSince1970 * 1000)
                             }
-                        } else {
-                            currentPromptTimestamp = nil
                         }
+                        events.append(.user(timestamp: timestamp))
                     } else if parsedLine.type == "assistant", let message = parsedLine.message {
                         if let contentBlocks = message.content {
                             switch contentBlocks {
                             case .string(let str):
-                                accumulatedText.append(str)
+                                events.append(.assistantText(str))
                             case .array(let blocks):
                                 for block in blocks {
                                     if block.type == "text", let text = block.text {
-                                        accumulatedText.append(text)
+                                        events.append(.assistantText(text))
                                     } else if block.type == "thinking", let thinking = block.thinking {
-                                        accumulatedThinking.append(thinking)
+                                        events.append(.assistantThinking(thinking))
                                     }
                                 }
                             }
@@ -638,11 +637,7 @@ class ClaudeHistoryLoader {
                     }
                 }
                 
-                if let prevTimestamp = currentPromptTimestamp {
-                    let text = accumulatedText.joined(separator: "\n")
-                    let thinking = accumulatedThinking.isEmpty ? nil : accumulatedThinking.joined(separator: "\n")
-                    replies[prevTimestamp] = AssistantResponse(thinking: thinking, text: text)
-                }
+                let replies = accumulateReplies(from: events)
                 
                 DispatchQueue.main.async {
                     completion(replies)

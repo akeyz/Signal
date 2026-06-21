@@ -1,5 +1,17 @@
 import SwiftUI
 
+private enum Timing {
+    static let cancelFadeOut: Double = 0.3
+    static let alertOnceFadeIn: Double = 0.3
+    static let alertOnceHold: Double = 0.45
+    static let alertOnceFadeOut: Double = 0.4
+    static let alertThreeFadeIn: Double = 0.25
+    static let alertThreeHold: Double = 0.3
+    static let alertThreeFadeOut: Double = 0.3
+    static let alertThreeGap: Double = 0.35
+    static let fallbackPulse: Double = 1.2
+}
+
 class ScreenOverlayViewModel: ObservableObject {
     @Published var overlayColor: Color = .clear
     @Published var opacity: Double = 0.0
@@ -15,11 +27,11 @@ class ScreenOverlayViewModel: ObservableObject {
         
         guard mode != .off, color != .black else {
             // Cancel current overlay animation and fade out
-            withAnimation(.easeOut(duration: 0.3)) {
+            withAnimation(.easeOut(duration: Timing.cancelFadeOut)) {
                 self.opacity = 0.0
             }
             // After fade out, notify that animation ended to hide windows
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + Timing.cancelFadeOut) { [weak self] in
                 guard let self = self, animationId == self.currentAnimationId else { return }
                 self.onAnimationEnd?()
             }
@@ -41,16 +53,16 @@ class ScreenOverlayViewModel: ObservableObject {
         
         switch mode {
         case .alertOnce:
-            withAnimation(.easeOut(duration: 0.3)) {
+            withAnimation(.easeOut(duration: Timing.alertOnceFadeIn)) {
                 self.opacity = 1.0
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + Timing.alertOnceHold) { [weak self] in
                 guard let self = self, id == self.currentAnimationId else { return }
-                withAnimation(.easeIn(duration: 0.4)) {
+                withAnimation(.easeIn(duration: Timing.alertOnceFadeOut)) {
                     self.opacity = 0.0
                 }
                 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                DispatchQueue.main.asyncAfter(deadline: .now() + Timing.alertOnceFadeOut) { [weak self] in
                     guard let self = self, id == self.currentAnimationId else { return }
                     self.onAnimationEnd?()
                 }
@@ -61,7 +73,7 @@ class ScreenOverlayViewModel: ObservableObject {
             
         case .continuous:
             // Continuous breathing/pulsing
-            pulseLoop(id: id, duration: period > 0 ? period / 2.0 : 1.2, targetHigh: true)
+            pulseLoop(id: id, duration: period > 0 ? period / 2.0 : Timing.fallbackPulse, targetHigh: true)
             
         case .off:
             break
@@ -70,23 +82,23 @@ class ScreenOverlayViewModel: ObservableObject {
     
     private func flashSequence(id: UUID, current: Int, total: Int) {
         guard id == currentAnimationId else { return }
-        withAnimation(.easeOut(duration: 0.25)) {
+        withAnimation(.easeOut(duration: Timing.alertThreeFadeIn)) {
             self.opacity = 1.0
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + Timing.alertThreeHold) { [weak self] in
             guard let self = self, id == self.currentAnimationId else { return }
-            withAnimation(.easeIn(duration: 0.3)) {
+            withAnimation(.easeIn(duration: Timing.alertThreeFadeOut)) {
                 self.opacity = 0.0
             }
             
             if current < total {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                DispatchQueue.main.asyncAfter(deadline: .now() + Timing.alertThreeGap) { [weak self] in
                     guard let self = self, id == self.currentAnimationId else { return }
                     self.flashSequence(id: id, current: current + 1, total: total)
                 }
             } else {
                 // Done with all flashes
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                DispatchQueue.main.asyncAfter(deadline: .now() + Timing.alertThreeFadeOut) { [weak self] in
                     guard let self = self, id == self.currentAnimationId else { return }
                     self.onAnimationEnd?()
                 }

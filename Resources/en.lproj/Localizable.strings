@@ -27,4 +27,8 @@
 "Could not locate the 'sgnl' binary inside the application bundle resources." = "Could not locate the 'sgnl' binary inside the application bundle resources.";
 "An error occurred during installation:\n%@" = "An error occurred during installation:\n%@";
 "OK" = "OK";
-
+"Screen Flash Effect" = "Screen Flash Effect";
+"Gaming-style overlay on color change" = "Gaming-style overlay on color change";
+"1 Flash" = "1 Flash";
+"3 Flashes" = "3 Flashes";
+"Continuous" = "Continuous";

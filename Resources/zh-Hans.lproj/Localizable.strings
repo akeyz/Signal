@@ -27,4 +27,8 @@
 "Could not locate the 'sgnl' binary inside the application bundle resources." = "无法在应用包资源中找到 'sgnl' 二进制文件。";
 "An error occurred during installation:\n%@" = "安装过程中发生错误：\n%@";
 "OK" = "确定";
-
+"Screen Flash Effect" = "屏幕闪烁效果";
+"Gaming-style overlay on color change" = "颜色改变时显示游戏风格的屏幕边缘覆层";
+"1 Flash" = "闪烁 1 次";
+"3 Flashes" = "闪烁 3 次";
+"Continuous" = "持续呼吸";

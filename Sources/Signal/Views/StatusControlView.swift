@@ -88,6 +88,29 @@ struct StatusControlView: View {
                             .controlSize(.small)
                             .labelsHidden()
                         }
+                        
+                        // Screen Flash Effect Selector
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(NSLocalizedString("Screen Flash Effect", comment: ""))
+                                    .font(.system(size: 13, weight: .medium))
+                                Text(NSLocalizedString("Gaming-style overlay on color change", comment: ""))
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            Picker("", selection: $viewModel.screenFlashMode) {
+                                ForEach(FlashMode.allCases, id: \.self) { mode in
+                                    Text(mode.label).tag(mode)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .labelsHidden()
+                            .controlSize(.small)
+                            .frame(width: 120)
+                        }
                     }
                     
                     Divider()

@@ -30,6 +30,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         applyIcon()
         setupPopover()
 
+        // Start screen overlay manager
+        ScreenOverlayManager.shared.start()
+
         // Listen for color-change commands from sgnl
         DistributedNotificationCenter.default().addObserver(
             self,
@@ -192,11 +195,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: Color Switching
 
-    private func switchColor(to newColor: LightColor) {
-        guard newColor != currentColor else { return }
-        currentColor = newColor
-        viewModel.currentColor = newColor
-        applyIcon()
+    private func switchColor(to newColor: LightColor, forceFlash: Bool = true) {
+        let changed = (newColor != currentColor)
+        if changed {
+            currentColor = newColor
+            viewModel.currentColor = newColor
+            applyIcon()
+        }
+        
+        if changed || forceFlash {
+            ScreenOverlayManager.shared.triggerFlash(color: newColor, mode: viewModel.screenFlashMode)
+        }
     }
 
     @objc private func toggleBreathing() {

@@ -8,7 +8,26 @@ class AppViewModel: ObservableObject {
     @Published var selectedTool: ToolType = .claude
     @Published var historySessions: [ToolType: [HistorySession]] = [:]
     @Published var isLoadingSessions: Bool = false
+    @Published var screenFlashMode: FlashMode = .alertThree {
+        didSet {
+            UserDefaults.standard.set(screenFlashMode.rawValue, forKey: "screenFlashMode")
+            if screenFlashMode != .off {
+                ScreenOverlayManager.shared.triggerFlash(color: currentColor, mode: screenFlashMode)
+            } else {
+                ScreenOverlayManager.shared.triggerFlash(color: .black, mode: .off)
+            }
+        }
+    }
     private var hasLoadedSessions = false
+    
+    init() {
+        if let savedValue = UserDefaults.standard.string(forKey: "screenFlashMode"),
+           let mode = FlashMode(rawValue: savedValue) {
+            self.screenFlashMode = mode
+        } else {
+            self.screenFlashMode = .alertThree
+        }
+    }
     
     var claudeSessions: [HistorySession] {
         return historySessions[selectedTool] ?? []
